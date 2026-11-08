@@ -84,21 +84,9 @@ func (m model) updateAlbums(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			albumPath, err := filepath.Abs(
-				filepath.Join(m.musicDir, m.albums[m.albumCursor]),
-			)
+			albumPath, err := resolveAlbumPath(m.musicDir, m.albums[m.albumCursor])
 			if err != nil {
-				m.message = fmt.Sprintf("Album-Pfad konnte nicht aufgelöst werden: %v", err)
-				return m, nil
-			}
-
-			info, err := os.Stat(albumPath)
-			if err != nil {
-				m.message = fmt.Sprintf("Albumordner nicht erreichbar: %v", err)
-				return m, nil
-			}
-			if !info.IsDir() {
-				m.message = "Der ausgewählte Pfad ist kein Ordner."
+				m.message = err.Error()
 				return m, nil
 			}
 

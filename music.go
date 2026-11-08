@@ -38,3 +38,20 @@ func validateDestination(path string) (string, error) {
 
 	return destination, nil
 }
+
+func resolveAlbumPath(musicDir, album string) (string, error) {
+	albumPath, err := filepath.Abs(filepath.Join(musicDir, album))
+	if err != nil {
+		return "", fmt.Errorf("Album-Pfad konnte nicht aufgelöst werden: %w", err)
+	}
+
+	info, err := os.Stat(albumPath)
+	if err != nil {
+		return "", fmt.Errorf("Albumordner nicht erreichbar: %w", err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("der ausgewählte Pfad ist kein Ordner")
+	}
+
+	return albumPath, nil
+}

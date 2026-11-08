@@ -7,6 +7,11 @@ import (
 	"path/filepath"
 )
 
+const (
+	defaultMusicDir              = "/home/fast/Music"
+	defaultMountedDeviceMusicDir = "/mnt/ak100/Music"
+)
+
 type config struct {
 	DefaultMusicDir              string `json:"default_music_dir"`
 	DefaultMountedDeviceMusicDir string `json:"default_mounted_device_music_dir"`
@@ -30,10 +35,10 @@ func loadConfig() (config, error) {
 		}
 
 		if cfg.DefaultMusicDir == "" {
-			cfg.DefaultMusicDir = "/home/fast/Music"
+			cfg.DefaultMusicDir = defaultMusicDir
 		}
 		if cfg.DefaultMountedDeviceMusicDir == "" {
-			cfg.DefaultMountedDeviceMusicDir = "/mnt/ak100/Music"
+			cfg.DefaultMountedDeviceMusicDir = defaultMountedDeviceMusicDir
 		}
 
 		return cfg, nil

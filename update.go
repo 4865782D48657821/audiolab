@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	tea "charm.land/bubbletea/v2"
@@ -185,15 +184,6 @@ func (m model) updatePreview(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.destination,
 				filepath.Base(m.selectedAlbum),
 			)
-
-			// Nicht in einen bereits vorhandenen Zielordner kopieren.
-			if _, err := os.Lstat(target); err == nil {
-				m.message = "Abbruch: Der Zielordner existiert bereits: " + target
-				return m, nil
-			} else if !os.IsNotExist(err) {
-				m.message = fmt.Sprintf("Zielordner kann nicht geprüft werden: %v", err)
-				return m, nil
-			}
 
 			m.message = "Kopiere …"
 			return m, copyAlbumCmd(m.selectedAlbum, target)

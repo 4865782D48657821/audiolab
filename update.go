@@ -123,19 +123,9 @@ func (m model) updateDestination(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.Blur()
 			return m, nil
 		case "enter":
-			destination, err := filepath.Abs(m.input.Value())
+			destination, err := validateDestination(m.input.Value())
 			if err != nil {
-				m.message = fmt.Sprintf("Zielpfad konnte nicht aufgelöst werden: %v", err)
-				return m, nil
-			}
-
-			info, err := os.Stat(destination)
-			if err != nil {
-				m.message = fmt.Sprintf("Zielordner nicht erreichbar: %v", err)
-				return m, nil
-			}
-			if !info.IsDir() {
-				m.message = "Der Zielpfad ist kein Ordner."
+				m.message = err.Error()
 				return m, nil
 			}
 

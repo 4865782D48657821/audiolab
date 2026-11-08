@@ -1,6 +1,10 @@
 package main
 
-import "os"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
 func listAlbums(dir string) ([]string, error) {
 	entries, err := os.ReadDir(dir)
@@ -16,4 +20,21 @@ func listAlbums(dir string) ([]string, error) {
 	}
 
 	return albums, nil
+}
+
+func validateDestination(path string) (string, error) {
+	destination, err := filepath.Abs(path)
+	if err != nil {
+		return "", fmt.Errorf("Zielpfad konnte nicht aufgelöst werden: %w", err)
+	}
+
+	info, err := os.Stat(destination)
+	if err != nil {
+		return "", fmt.Errorf("Zielordner nicht erreichbar: %w", err)
+	}
+	if !info.IsDir() {
+		return "", fmt.Errorf("der Zielpfad ist kein Ordner")
+	}
+
+	return destination, nil
 }

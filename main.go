@@ -3,9 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
@@ -35,24 +33,6 @@ type model struct {
 	destination                  string
 	defaultMusicDir              string
 	defaultMountedDeviceMusicDir string
-}
-
-type copyResultMsg struct {
-	target string
-	err    error
-	output string
-}
-
-func copyAlbumCmd(source, target string) tea.Cmd {
-	return func() tea.Msg {
-		cmd := exec.Command("cp", "-r", "--", source, target)
-		output, err := cmd.CombinedOutput()
-		return copyResultMsg{
-			target: target,
-			err:    err,
-			output: strings.TrimSpace(string(output)),
-		}
-	}
 }
 
 func initialModel() model {

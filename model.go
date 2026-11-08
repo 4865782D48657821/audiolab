@@ -20,7 +20,7 @@ const (
 type model struct {
 	screen                       screen
 	cursor                       int
-	items                        []string
+	items                        []menuItem
 	sourcePath                   string
 	message                      string
 	input                        textinput.Model
@@ -33,6 +33,20 @@ type model struct {
 	defaultMountedDeviceMusicDir string
 }
 
+type menuAction int
+
+const (
+	copyMusicAction menuAction = iota
+	ripCdAction
+	embedCoverAction
+	quitAction
+)
+
+type menuItem struct {
+	label  string
+	action menuAction
+}
+
 func initialModel() model {
 	cfg, err := loadConfig()
 
@@ -42,11 +56,11 @@ func initialModel() model {
 	input.SetWidth(60)
 
 	m := model{
-		items: []string{
-			"Musik auf Player kopieren",
-			"CD als FLAC rippen",
-			"Cover in FLAC-Dateien einbetten",
-			"Beenden",
+		items: []menuItem{
+			{label: "Musik auf Player kopieren", action: copyMusicAction},
+			{label: "CD als FLAC rippen", action: ripCdAction},
+			{label: "Cover in FLAC-Dateien einbetten", action: embedCoverAction},
+			{label: "Beenden", action: quitAction},
 		},
 		input:                        input,
 		defaultMusicDir:              cfg.DefaultMusicDir,

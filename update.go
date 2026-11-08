@@ -44,14 +44,16 @@ func (m model) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "enter":
-			switch m.items[m.cursor] {
-			case "Musik auf Player kopieren":
+			switch m.items[m.cursor].action {
+			case copyMusicAction:
 				m.screen = sourceScreen
 				m.message = ""
 				m.input.SetValue(m.defaultMusicDir)
 				return m, m.input.Focus()
-			case "Beenden":
+			case quitAction:
 				return m, tea.Quit
+			case ripCdAction, embedCoverAction:
+				// Noch nicht implementiert.
 			}
 		}
 	}

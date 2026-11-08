@@ -30,7 +30,7 @@ func (m model) viewMenu() tea.View {
 		if i == m.cursor {
 			cursor = "> "
 		}
-		text += fmt.Sprintf("%s%s\n", cursor, item)
+		text += fmt.Sprintf("%s%s\n", cursor, item.label)
 	}
 	if m.message != "" {
 		text += "\n" + m.message + "\n"

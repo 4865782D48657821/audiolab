@@ -66,3 +66,33 @@ func TestValidateDestination(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveAlbumPath(t *testing.T) {
+	root := t.TempDir()
+	albumDir := filepath.Join(root, "Album")
+	if err := os.Mkdir(albumDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := resolveAlbumPath(root, "Album")
+	if err != nil {
+		t.Fatalf("resolveAlbumPath() error = %v", err)
+	}
+
+	want, err := filepath.Abs(albumDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("resolveAlbumPath() = %q, want %q", got, want)
+	}
+}
+
+func TestResolveAlbumPathRejectsMissingAlbum(t *testing.T) {
+	root := t.TempDir()
+
+	_, err := resolveAlbumPath(root, "Missing")
+	if err == nil {
+		t.Fatal("resolveAlbumPath() wollte für ein fehlendes Album keinen Fehler liefern")
+	}
+}

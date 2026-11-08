@@ -164,20 +164,15 @@ func (m model) updateSource(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case "enter":
 			dir := m.input.Value()
-			entries, err := os.ReadDir(dir)
+
+			albums, err := listAlbums(dir)
+
 			if err != nil {
 				m.message = fmt.Sprintf("Ordner kann nicht gelesen werden: %v", err)
 				return m, nil
 			}
-
 			m.musicDir = dir
-			m.albums = nil
-			for _, entry := range entries {
-				if entry.IsDir() {
-					m.albums = append(m.albums, entry.Name())
-				}
-			}
-
+			m.albums = albums
 			m.albumCursor = 0
 			m.screen = albumsScreen
 			m.input.Blur()

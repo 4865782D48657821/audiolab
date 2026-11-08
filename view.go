@@ -17,10 +17,17 @@ func (m model) View() tea.View {
 		return m.viewDestination()
 	case albumsScreen:
 		return m.viewAlbums()
+	case operationScreen:
+		return m.viewOperation()
 	default:
 		return m.viewMenu()
 	}
 
+}
+
+func (m model) viewOperation() tea.View {
+	text := "Vorgang läuft"
+	return tea.NewView(text)
 }
 
 func (m model) viewMenu() tea.View {

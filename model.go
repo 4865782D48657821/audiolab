@@ -15,10 +15,12 @@ const (
 	albumsScreen
 	destinationScreen
 	previewScreen
+	operationScreen
 )
 
 type model struct {
 	screen                       screen
+	pendingAction                menuAction
 	cursor                       int
 	items                        []menuItem
 	sourcePath                   string
@@ -37,7 +39,7 @@ type menuAction int
 
 const (
 	copyMusicAction menuAction = iota
-	ripCdAction
+	ripCDAction
 	embedCoverAction
 	quitAction
 )
@@ -58,9 +60,10 @@ func initialModel() model {
 	m := model{
 		items: []menuItem{
 			{label: "Musik auf Player kopieren", action: copyMusicAction},
-			{label: "CD als FLAC rippen", action: ripCdAction},
+			{label: "CD als FLAC rippen", action: ripCDAction},
 			{label: "Cover in FLAC-Dateien einbetten", action: embedCoverAction},
 			{label: "Beenden", action: quitAction},
+			//{label: "Vorgang läuft...", action: pendingAction},
 		},
 		input:                        input,
 		defaultMusicDir:              cfg.DefaultMusicDir,

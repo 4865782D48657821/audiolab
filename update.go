@@ -13,6 +13,22 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleCopyResult(result)
 	}
 
+	if result, ok := msg.(operationResultMsg); ok {
+		m.screen = menuScreen
+
+		if result.err != nil {
+			m.message = result.title + " fehlgeschlagen: " + result.err.Error()
+		} else {
+			m.message = result.title + " abgeschlossen."
+		}
+
+		if result.output != "" {
+			m.message += "\n" + result.output
+		}
+
+		return m, nil
+	}
+
 	switch m.screen {
 
 	case previewScreen:
@@ -43,17 +59,30 @@ func (m model) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.cursor < len(m.items)-1 {
 				m.cursor++
 			}
+
 		case "enter":
 			switch m.items[m.cursor].action {
 			case copyMusicAction:
+				m.pendingAction = copyMusicAction
 				m.screen = sourceScreen
 				m.message = ""
 				m.input.SetValue(m.defaultMusicDir)
 				return m, m.input.Focus()
+
+			case ripCDAction:
+				m.screen = operationScreen
+				m.message = "CD wird gerippt …"
+				return m, ripCDCmd()
+
+			case embedCoverAction:
+				m.pendingAction = embedCoverAction
+				m.screen = sourceScreen
+				m.message = ""
+				m.input.SetValue(m.defaultMusicDir)
+				return m, m.input.Focus()
+
 			case quitAction:
 				return m, tea.Quit
-			case ripCdAction, embedCoverAction:
-				// Noch nicht implementiert.
 			}
 		}
 	}
@@ -85,13 +114,23 @@ func (m model) updateAlbums(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 
-			albumPath, err := resolveAlbumPath(m.musicDir, m.albums[m.albumCursor])
+			albumPath, err := resolveAlbumPath(
+				m.musicDir,
+				m.albums[m.albumCursor],
+			)
 			if err != nil {
 				m.message = err.Error()
 				return m, nil
 			}
 
 			m.selectedAlbum = albumPath
+
+			if m.pendingAction == embedCoverAction {
+				m.screen = operationScreen
+				m.message = "Cover wird eingebettet …"
+				return m, embedCoverCmd(m.selectedAlbum)
+			}
+
 			m.destination = ""
 			m.input.Reset()
 			m.input.Placeholder = "/mnt/ak100/Music"

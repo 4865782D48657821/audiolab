@@ -27,7 +27,7 @@ func (m model) View() tea.View {
 
 func (m model) viewOperation() tea.View {
 	text := "Vorgang läuft"
-	return tea.NewView(text)
+	return tea.NewView(m.spinner.View() + text)
 }
 
 func (m model) viewMenu() tea.View {

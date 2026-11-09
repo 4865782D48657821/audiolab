@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -16,9 +17,9 @@ type operationResultMsg struct {
 	output string
 }
 
-func ripCDCmd() tea.Cmd {
+func ripCDCmd(ctx context.Context) tea.Cmd {
 	return func() tea.Msg {
-		cmd := exec.Command("abcde", "-o", "flac")
+		cmd := exec.CommandContext(ctx, "abcde", "-o", "flac")
 		output, err := cmd.CombinedOutput()
 
 		return operationResultMsg{

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"context"
 
+	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 )
@@ -20,6 +22,8 @@ const (
 
 type model struct {
 	screen                       screen
+	spinner                      spinner.Model
+	cancelOperation context.CancelFunc
 	pendingAction                menuAction
 	cursor                       int
 	items                        []menuItem
@@ -58,6 +62,7 @@ func initialModel() model {
 	input.SetWidth(60)
 
 	m := model{
+		spinner: spinner.New(),
 		items: []menuItem{
 			{label: "Musik auf Player kopieren", action: copyMusicAction},
 			{label: "CD als FLAC rippen", action: ripCDAction},

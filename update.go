@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -14,6 +15,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if result, ok := msg.(operationResultMsg); ok {
+
+		if m.cancelOperation != nil {
+			m.cancelOperation()
+			m.cancelOperation = nil
+		}
 		m.screen = menuScreen
 
 		if result.err != nil {
@@ -27,6 +33,29 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		return m, nil
+	}
+
+	if m.screen == operationScreen {
+
+		if key, ok := msg.(tea.KeyPressMsg); ok {
+			switch key.String() {
+			case "esc", "q":
+				if m.cancelOperation != nil {
+					m.cancelOperation()
+					m.cancelOperation = nil
+				}
+				m.message = "Breche Vorgang ab …"
+				return m, nil
+			case "ctrl+c":
+				if m.cancelOperation != nil {
+					m.cancelOperation()
+				}
+				return m, tea.Quit
+			}
+		}
+		var cmd tea.Cmd
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
 	}
 
 	switch m.screen {
@@ -70,9 +99,11 @@ func (m model) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.input.Focus()
 
 			case ripCDAction:
+				ctx, cancel := context.WithCancel(context.Background())
+				m.cancelOperation = cancel
 				m.screen = operationScreen
 				m.message = "CD wird gerippt …"
-				return m, ripCDCmd()
+				return m, tea.Batch(m.spinner.Tick, ripCDCmd(ctx))
 
 			case embedCoverAction:
 				m.pendingAction = embedCoverAction

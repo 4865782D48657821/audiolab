@@ -9,6 +9,8 @@ var (
 	success = lipgloss.Color("#4ADE80")
 	warning = lipgloss.Color("#FBBF24")
 	white   = lipgloss.Color("#F8FAFC")
+ danger = lipgloss.Color("#F87171")
+ background = lipgloss.Color("#0F172A")
 
 	titleStyle = lipgloss.NewStyle().
 			Bold(true).
@@ -29,7 +31,9 @@ var (
 
 	panelStyle = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			BorderForeground(primary).
+			BorderForeground(lipgloss.Color("#334155")).
+ Background(background).
+ Foreground(white).
 			Padding(1, 2)
 
 	labelStyle = lipgloss.NewStyle().
@@ -45,7 +49,8 @@ var (
 			MarginTop(1)
 
 	errorStyle = lipgloss.NewStyle().
-			Foreground(warning)
+			Foreground(danger)
+ warningStyle = lipgloss.NewStyle().Foreground(warning)
 
 	successStyle = lipgloss.NewStyle().
 			Foreground(success)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+ "charm.land/bubbles/v2/list"
 	"fmt"
 	"path/filepath"
 
@@ -10,53 +11,53 @@ import (
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	if result, ok := msg.(copyResultMsg); ok {
-		return m.handleCopyResult(result)
-	}
-
-	if result, ok := msg.(operationResultMsg); ok {
-
-		if m.cancelOperation != nil {
-			m.cancelOperation()
-			m.cancelOperation = nil
-		}
-		m.screen = menuScreen
-
-		if result.err != nil {
-			m.message = result.title + " fehlgeschlagen: " + result.err.Error()
-		} else {
-			m.message = result.title + " abgeschlossen."
-		}
-
-		if result.output != "" {
-			m.message += "\n" + result.output
-		}
-
-		return m, nil
-	}
-
-	if m.screen == operationScreen {
-
-		if key, ok := msg.(tea.KeyPressMsg); ok {
-			switch key.String() {
-			case "esc", "q":
-				if m.cancelOperation != nil {
-					m.cancelOperation()
-					m.cancelOperation = nil
-				}
-				m.message = "Breche Vorgang ab …"
-				return m, nil
-			case "ctrl+c":
-				if m.cancelOperation != nil {
-					m.cancelOperation()
-				}
-				return m, tea.Quit
-			}
-		}
-		var cmd tea.Cmd
-		m.spinner, cmd = m.spinner.Update(msg)
-		return m, cmd
-	}
+ switch msg := msg.(type) {
+ case tea.WindowSizeMsg:
+  m.width, m.height = msg.Width, msg.Height
+  m.resize()
+  return m,nil
+ case operationProgressMsg:
+  if !m.operation.running || msg.id != m.operation.id { return m,nil }
+  m.operation.operationProgress = msg.operationProgress
+  return m,waitOperation(m.operation.stream)
+ case operationResultMsg:
+  if !m.operation.running || msg.id != m.operation.id { return m,nil }
+  m.operation.running = false
+  m.operation.operationProgress = msg.operationProgress
+  m.operation.err, m.operation.output = msg.err, msg.output
+  if m.cancelOperation != nil {m.cancelOperation();m.cancelOperation=nil}
+  m.details.SetContent(msg.output)
+  m.details.GotoTop()
+  if m.quitAfterOperation { return m,tea.Quit }
+  return m,nil
+ }
+ if m.screen == operationScreen {
+  if key,ok:=msg.(tea.KeyPressMsg);ok {
+   switch key.String() {
+   case "esc","q","ctrl+c","enter":
+    if m.operation.running {
+     if key.String()=="enter" {return m,nil}
+     if key.String()=="ctrl+c" {m.quitAfterOperation=true}
+     m.operation.cancelling=true
+     m.cancelOperation()
+    } else {
+     if key.String()=="ctrl+c" {return m,tea.Quit}
+     m.screen=menuScreen
+     if m.operation.kind==copyOperation {m.screen=previewScreen}
+     m.message=""
+    }
+    return m,nil
+   }
+  }
+  if m.operation.running {
+   var cmd tea.Cmd
+   m.spinner,cmd=m.spinner.Update(msg)
+   return m,cmd
+  }
+  var cmd tea.Cmd
+  m.details,cmd=m.details.Update(msg)
+  return m,cmd
+ }
 
 	switch m.screen {
 
@@ -95,21 +96,19 @@ func (m model) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.pendingAction = copyMusicAction
 				m.screen = sourceScreen
 				m.message = ""
-				m.input.SetValue(m.defaultMusicDir)
+				m.input.Placeholder="/home/user/Musik"
+ m.input.SetValue(m.defaultMusicDir)
 				return m, m.input.Focus()
 
-			case ripCDAction:
-				ctx, cancel := context.WithCancel(context.Background())
-				m.cancelOperation = cancel
-				m.screen = operationScreen
-				m.message = "CD wird gerippt …"
-				return m, tea.Batch(m.spinner.Tick, ripCDCmd(ctx))
+   case ripCDAction:
+    return m.startOperation(ripOperation,"CD rippen",ripCD)
 
 			case embedCoverAction:
 				m.pendingAction = embedCoverAction
 				m.screen = sourceScreen
 				m.message = ""
-				m.input.SetValue(m.defaultMusicDir)
+				m.input.Placeholder="/home/user/Musik"
+ m.input.SetValue(m.defaultMusicDir)
 				return m, m.input.Focus()
 
 			case quitAction:
@@ -122,55 +121,34 @@ func (m model) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) updateAlbums(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "esc":
-			m.screen = menuScreen
-			return m, nil
-		case "up", "k":
-			if m.albumCursor > 0 {
-				m.albumCursor--
-			}
-		case "down", "j":
-			if m.albumCursor < len(m.albums)-1 {
-				m.albumCursor++
-			}
-		case "ctrl+c":
-			return m, tea.Quit
-
-		case "enter":
-			if len(m.albums) == 0 {
-				m.message = "Es gibt kein Album zum Auswählen."
-				return m, nil
-			}
-
-			albumPath, err := resolveAlbumPath(
-				m.musicDir,
-				m.albums[m.albumCursor],
-			)
-			if err != nil {
-				m.message = err.Error()
-				return m, nil
-			}
-
-			m.selectedAlbum = albumPath
-
-			if m.pendingAction == embedCoverAction {
-				m.screen = operationScreen
-				m.message = "Cover wird eingebettet …"
-				return m, embedCoverCmd(m.selectedAlbum)
-			}
-
-			m.destination = ""
-			m.input.Reset()
-			m.input.Placeholder = "/mnt/ak100/Music"
-			m.input.SetValue(m.defaultMountedDeviceMusicDir)
-			m.screen = destinationScreen
-			return m, m.input.Focus()
-		}
-	}
-	return m, nil
+ if key,ok:=msg.(tea.KeyPressMsg);ok {
+  if key.String()=="ctrl+c" {return m,tea.Quit}
+  // Escape first leaves the filter editor/applied filter. Enter first
+  // confirms the search; neither key leaks into global navigation.
+  if m.albumList.FilterState()!=list.Filtering {
+   switch key.String() {
+   case "esc":
+    if m.albumList.FilterState()==list.Unfiltered {m.screen=menuScreen;return m,nil}
+   case "enter":
+    item,ok:=m.albumList.SelectedItem().(albumItem)
+    if !ok {m.message="Es gibt kein Album zum Auswählen.";return m,nil}
+    albumPath,err:=resolveAlbumPath(m.musicDir,string(item))
+    if err!=nil {m.message=err.Error();return m,nil}
+    m.selectedAlbum=albumPath
+    if m.pendingAction==embedCoverAction {
+     return m.startOperation(coverOperation,"Cover einbetten",func(ctx context.Context,emit func(operationProgress))(string,error){return embedCover(ctx,albumPath,emit)})
+    }
+    m.destination="";m.message=""
+    m.input.Reset();m.input.Placeholder="/mnt/ak100/Music"
+    m.input.SetValue(m.defaultMountedDeviceMusicDir)
+    m.screen=destinationScreen
+    return m,m.input.Focus()
+   }
+  }
+ }
+ var cmd tea.Cmd
+ m.albumList,cmd=m.albumList.Update(msg)
+ return m,cmd
 }
 
 func (m model) updateDestination(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -222,7 +200,11 @@ func (m model) updateSource(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.musicDir = dir
 			m.albums = albums
-			m.albumCursor = 0
+			items := make([]list.Item,len(albums))
+ for i,name := range albums {items[i]=albumItem(name)}
+ m.albumList.ResetFilter()
+ m.albumList.Select(0)
+ listCmd := m.albumList.SetItems(items)
 			m.screen = albumsScreen
 			m.input.Blur()
 
@@ -231,7 +213,7 @@ func (m model) updateSource(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				m.message = ""
 			}
-			return m, nil
+			return m, listCmd
 		case "ctrl+c":
 			return m, tea.Quit
 		}
@@ -257,24 +239,11 @@ func (m model) updatePreview(msg tea.Msg) (tea.Model, tea.Cmd) {
 				filepath.Base(m.selectedAlbum),
 			)
 
-			m.message = "Kopiere …"
-			return m, copyAlbumCmd(m.selectedAlbum, target)
+			source := m.selectedAlbum
+ return m.startOperation(copyOperation,"Album kopieren",func(ctx context.Context,emit func(operationProgress))(string,error){return "",copyAlbum(ctx,source,target,emit)})
 		}
 	}
 
 	return m, nil
 }
 
-func (m model) handleCopyResult(result copyResultMsg) (tea.Model, tea.Cmd) {
-	m.screen = previewScreen
-	if result.err != nil {
-		m.message = fmt.Sprintf("Kopieren fehlgeschlagen: %v", result.err)
-		if result.output != "" {
-			m.message += "\n" + result.output
-		}
-	} else {
-		m.message = "Kopieren abgeschlossen: " + result.target
-	}
-
-	return m, nil
-}

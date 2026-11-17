@@ -31,19 +31,27 @@ func (m model) viewOperation() tea.View {
 }
 
 func (m model) viewMenu() tea.View {
-	text := "Audiolab\n\n"
+	text := titleStyle.Render("♫ AUDIOLAB") + "\n"
+	text += subtitleStyle.Render("Dein Music Manager") + "\n\n"
+
 	for i, item := range m.items {
-		cursor := "  "
 		if i == m.cursor {
-			cursor = "> "
+			text += selectedStyle.Render("❯  " + item.label)
+		} else {
+			text += normalStyle.Render(item.label)
 		}
-		text += fmt.Sprintf("%s%s\n", cursor, item.label)
+		text += "\n"
 	}
+
 	if m.message != "" {
-		text += "\n" + m.message + "\n"
+		text += "\n" + errorStyle.Render(m.message)
 	}
-	text += "\n↑/↓ oder j/k: navigieren · Enter: auswählen · q: beenden"
-	return tea.NewView(text)
+
+	text += helpStyle.Render(
+		"↑/↓ Navigieren  •  Enter Auswählen  •  q Beenden",
+	)
+
+	return tea.NewView(panelStyle.Render(text))
 }
 
 func (m model) viewAlbums() tea.View {
@@ -62,31 +70,64 @@ func (m model) viewAlbums() tea.View {
 	return tea.NewView(text)
 }
 
-func (m model) viewDestination() tea.View {
-	text := "Zielordner auf dem Player eingeben:\n\n"
-	text += m.input.View()
-	text += "\n\nEnter: prüfen · Esc: zurück"
-	if m.message != "" {
-		text += "\n\n" + m.message
-	}
-	return tea.NewView(text)
-}
-
 func (m model) viewPreview() tea.View {
-	text := "Kopiervorschau\n\n"
-	text += "Quelle:\n" + m.selectedAlbum + "\n\n"
-	text += "Zielordner:\n" + m.destination + "\n\n"
-	text += "Enter: kopieren · Esc: zurück\n"
+	content := titleStyle.Render(
+		"♫ AUDIOLAB / KOPIERVORSCHAU",
+	) + "\n"
+
+	content += labelStyle.Render("QUELLE") + "\n"
+	content += valueStyle.Render(m.selectedAlbum) + "\n\n"
+
+	content += labelStyle.Render("ZIEL") + "\n"
+	content += valueStyle.Render(m.destination) + "\n\n"
+
 	if m.message != "" {
-		text += "\n" + m.message
+		content += errorStyle.Render(m.message) + "\n\n"
+	} else {
+		content += successStyle.Render(
+			"✓ Bereit zum Kopieren",
+		) + "\n\n"
 	}
-	return tea.NewView(text)
+
+	content += helpStyle.Render(
+		"Enter Kopieren  •  Esc Zurück",
+	)
+
+	return tea.NewView(panelStyle.Render(content))
 }
 
 func (m model) viewSource() tea.View {
-	return tea.NewView(
-		"Pfad zum Music-Ordner eingeben:\n\n" +
-			m.input.View() +
-			"\n\nEnter: Alben anzeigen · Esc: zurück",
+	content := titleStyle.Render("♫ MUSIKQUELLE") + "\n"
+	content += subtitleStyle.Render(
+		"Wähle den Ordner mit deiner Musiksammlung.",
+	) + "\n\n"
+
+	content += labelStyle.Render("QUELLPFAD") + "\n"
+	content += m.input.View() + "\n"
+
+	content += helpStyle.Render(
+		"Enter Alben anzeigen  •  Esc Zurück",
 	)
+
+	return tea.NewView(panelStyle.Render(content))
+}
+
+func (m model) viewDestination() tea.View {
+	content := titleStyle.Render("♫ ZIELORDNER") + "\n"
+	content += subtitleStyle.Render(
+		"Wo soll das Album gespeichert werden?",
+	) + "\n\n"
+
+	content += labelStyle.Render("ZIELPFAD") + "\n"
+	content += m.input.View() + "\n"
+
+	if m.message != "" {
+		content += "\n" + errorStyle.Render(m.message)
+	}
+
+	content += helpStyle.Render(
+		"Enter Prüfen  •  Esc Zurück",
+	)
+
+	return tea.NewView(panelStyle.Render(content))
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"context"
+	"fmt"
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textinput"
@@ -23,7 +23,7 @@ const (
 type model struct {
 	screen                       screen
 	spinner                      spinner.Model
-	cancelOperation context.CancelFunc
+	cancelOperation              context.CancelFunc
 	pendingAction                menuAction
 	cursor                       int
 	items                        []menuItem
